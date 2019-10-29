@@ -17,8 +17,10 @@ void RS485Component::dump_config() {
     ESP_LOGCONFIG(TAG, "  RX Receive Timeout: %d" , conf_rx_wait_ );
     ESP_LOGCONFIG(TAG, "  TX Transmission Timeout: %d", conf_tx_wait_ );
     ESP_LOGCONFIG(TAG, "  TX Retry Count: %d"     , conf_tx_retry_cnt_);
-    ESP_LOGCONFIG(TAG, "  Data prefix: 0x%02X"    , prefix_ );
-    ESP_LOGCONFIG(TAG, "  Data suffix: 0x%02X"    , suffix_ );
+    if(prefix_.has_value())
+        ESP_LOGCONFIG(TAG, "  Data prefix: %s"    , hexencode(&prefix_.value()[0], prefix_len_).c_str() );
+    if(suffix_.has_value())
+        ESP_LOGCONFIG(TAG, "  Data suffix: %s"    , hexencode(&suffix_.value()[0], suffix_len_).c_str() );
     ESP_LOGCONFIG(TAG, "  Data checksum: %s"      , YESNO(checksum_));
     if(state_response_.has_value())
         ESP_LOGCONFIG(TAG, "  Data response: %s, offset: %d", hexencode(&state_response_.value().data[0], state_response_.value().data.size()).c_str(), state_response_.value().offset);
@@ -69,7 +71,7 @@ void RS485Component::loop() {
 
         // Patket type
         if(state_response_.has_value()) {
-            if(compare(&rx_buffer_[prefix_? 1 : 0], rx_bytesRead_-(prefix_? 1 : 0), &state_response_.value().data[0], state_response_.value().data.size(), state_response_.value().offset))
+            if(compare(&rx_buffer_[prefix_len_], rx_bytesRead_-prefix_len_, &state_response_.value().data[0], state_response_.value().data.size(), state_response_.value().offset))
                 response_wait_ = false;
             else
                 response_wait_ = true;
@@ -77,7 +79,7 @@ void RS485Component::loop() {
 
         // for Ack
         if(tx_ack_wait_ && tx_current_cmd_) {
-            if(compare(&rx_buffer_[prefix_? 1 : 0], rx_bytesRead_-(prefix_? 1 : 0), &tx_current_cmd_->ack[0], tx_current_cmd_->ack.size(), 0)) {
+            if(compare(&rx_buffer_[prefix_len_], rx_bytesRead_-prefix_len_, &tx_current_cmd_->ack[0], tx_current_cmd_->ack.size(), 0)) {
                 tx_current_cmd_ = nullptr;
                 tx_ack_wait_ = false;
                 tx_retry_cnt_ = 0;
@@ -95,7 +97,7 @@ void RS485Component::loop() {
         // Publish State
         bool found = false;
         for (auto *listener : this->listeners_)
-            if (listener->parse_data(&rx_buffer_[prefix_? 1 : 0], rx_bytesRead_-(prefix_? 1 : 0)-(suffix_? 1 : 0) )) {
+            if (listener->parse_data(&rx_buffer_[prefix_len_], rx_bytesRead_-prefix_len_-suffix_len_ )) {
                 found = true;
                 //if(!listener->is_monitor()) break;
             }
@@ -129,7 +131,8 @@ void RS485Component::rx_proc() {
             if (rx_bytesRead_ < BUFFER_SIZE) {
                 rx_buffer_[rx_bytesRead_] = this->hw_serial_->read();
                 rx_bytesRead_++;
-                if(suffix_ && rx_buffer_[rx_bytesRead_-1] == suffix_) return;
+                
+                if(suffix_.has_value() && rx_bytesRead_ > prefix_len_+suffix_len_ && compare(&rx_buffer_[0], rx_bytesRead_, &suffix_.value()[0], suffix_len_, rx_bytesRead_-suffix_len_)) return;
             }
             else
                 this->hw_serial_->read();  // when the buffer is full, just read remaining input, but do not store...
@@ -200,7 +203,7 @@ void RS485Component::write_with_header(const std::vector<uint8_t> &data) {
     tx_start_time_ = millis();
 
     // Header
-    if(prefix_) write_byte(prefix_);
+    if(prefix_.has_value()) write_array(prefix_.value());
     
     // Data part
     write_array(data);
@@ -210,7 +213,7 @@ void RS485Component::write_with_header(const std::vector<uint8_t> &data) {
         write_byte(make_checksum(&(data[0]), data.size()));
 
     // Footer
-    if(suffix_) write_byte(suffix_);
+    if(suffix_.has_value()) write_array(suffix_.value());
 
     // wait for send
     flush();
@@ -249,15 +252,15 @@ void RS485Component::flush() {
 }
 
 bool RS485Component::validate(const uint8_t *data, const num_t len) {
-    if(prefix_ && data[0] != prefix_) {
+    if(prefix_.has_value() && !compare(&data[0], len, &prefix_.value()[0], prefix_len_, 0)) {
         ESP_LOGW(TAG, "[Read] Prefix not match: %s", hexencode(&data[0], len).c_str());
         return false;
     }
-    if(suffix_ && data[len-1] != suffix_) {
+    if(suffix_.has_value() && !compare(&data[0], len, &suffix_.value()[0], suffix_len_, len-suffix_len_)) {
         ESP_LOGW(TAG, "[Read] Suffix not match: %s", hexencode(&data[0], len).c_str());
         return false;
     }
-    if(make_checksum(&data[0], len-(suffix_? 2 : 1)) != data[len-(suffix_? 2 : 1)]) {
+    if(checksum_ && make_checksum(&data[prefix_len_], len-prefix_len_-suffix_len_-1) != data[len-suffix_len_-1]) {
         ESP_LOGW(TAG, "[Read] Checksum error: %s", hexencode(&data[0], len).c_str());
         return false;
     }
@@ -266,11 +269,14 @@ bool RS485Component::validate(const uint8_t *data, const num_t len) {
 
 uint8_t RS485Component::make_checksum(const uint8_t *data, const num_t len) const {
     if (this->checksum_f_.has_value()) {
-        return (*checksum_f_)(prefix_, data[0] == prefix_ ? &data[1] : data, data[0] == prefix_ ? len-1 : len);
+        return (*checksum_f_)(data, len);
     }
     else {
         // CheckSum8 Xor (Default)
-        uint8_t crc = data[0] == prefix_ ? 0 : prefix_;
+        uint8_t crc = 0;
+        if(prefix_.has_value())
+            for(num_t i=0; i<prefix_len_; i++)
+                crc ^= prefix_.value()[i];
         for(num_t i=0; i<len; i++)
             crc ^= data[i];
         return crc;
