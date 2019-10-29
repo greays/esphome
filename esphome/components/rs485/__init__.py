@@ -68,8 +68,8 @@ CONFIG_SCHEMA = cv.All(cv.Schema({
     cv.Optional(CONF_RX_WAIT, default=10): cv.int_range(min=1, max=2000),
     cv.Optional(CONF_TX_WAIT): cv.int_range(min=1, max=2000),
     cv.Optional(CONF_TX_RETRY_CNT): cv.int_range(min=1, max=10),
-    cv.Optional(CONF_PREFIX): cv.hex_int,
-    cv.Optional(CONF_SUFFIX): cv.hex_int,
+    cv.Optional(CONF_PREFIX): validate_hex_data,
+    cv.Optional(CONF_SUFFIX): validate_hex_data,
     cv.Optional(CONF_CHECKSUM): cv.boolean,
     cv.Optional(CONF_CHECKSUM_LAMBDA): cv.returning_lambda,
     cv.Optional(CONF_PACKET_MONITOR): cv.ensure_list(state_hex_schema),
@@ -98,8 +98,7 @@ def to_code(config):
         cg.add(var.set_suffix(config[CONF_SUFFIX]))
     if CONF_CHECKSUM_LAMBDA in config:
         template_ = yield cg.process_lambda(config[CONF_CHECKSUM_LAMBDA],
-                                            [(uint8_const, 'prefix'), (uint8_ptr_const, 'data'),
-                                             (num_t_const, 'len')],
+                                            [(uint8_ptr_const, 'data'), (num_t_const, 'len')],
                                             return_type=cg.uint8)
         cg.add(var.set_checksum_lambda(template_))
     if CONF_CHECKSUM in config:
