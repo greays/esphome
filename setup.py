@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """esphome setup script."""
 from setuptools import setup, find_packages
 import os
@@ -24,14 +24,13 @@ DOWNLOAD_URL = '{}/archive/v{}.zip'.format(GITHUB_URL, const.__version__)
 
 REQUIRES = [
     'voluptuous==0.11.7',
-    'PyYAML==5.1.2',
-    'paho-mqtt==1.4.0',
-    'colorlog==4.0.2',
-    'tornado==5.1.1',
-    'typing>=3.6.6;python_version<"3.5"',
-    'protobuf==3.10.0',
+    'PyYAML==5.3.1',
+    'paho-mqtt==1.5.0',
+    'colorlog==4.1.0',
+    'tornado==6.0.4',
+    'protobuf==3.11.3',
     'tzlocal==2.0.0',
-    'pytz==2019.3',
+    'pytz==2020.1',
     'pyserial==3.4',
     'ifaddr==0.1.6',
 ]
@@ -41,8 +40,8 @@ REQUIRES = [
 # This means they have to be in your $PATH.
 if os.environ.get('ESPHOME_USE_SUBPROCESS') is None:
     REQUIRES.extend([
-        'platformio==4.0.3',
-        'esptool==2.7',
+        'platformio==4.3.3',
+        'esptool==2.8',
     ])
 
 CLASSIFIERS = [
@@ -51,7 +50,6 @@ CLASSIFIERS = [
     'Intended Audience :: End Users/Desktop',
     'License :: OSI Approved :: MIT License',
     'Programming Language :: C++',
-    'Programming Language :: Python :: 2',
     'Programming Language :: Python :: 3',
     'Topic :: Home Automation',
 ]
@@ -69,7 +67,7 @@ setup(
     zip_safe=False,
     platforms='any',
     test_suite='tests',
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,<4.0',
+    python_requires='>=3.6,<4.0',
     install_requires=REQUIRES,
     keywords=['home', 'automation'],
     entry_points={

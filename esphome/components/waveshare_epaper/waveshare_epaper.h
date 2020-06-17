@@ -68,6 +68,7 @@ enum WaveshareEPaperTypeAModel {
   WAVESHARE_EPAPER_2_13_IN,
   WAVESHARE_EPAPER_2_9_IN,
   TTGO_EPAPER_2_13_IN,
+  TTGO_EPAPER_2_13_IN_B73,
 };
 
 class WaveshareEPaperTypeA : public WaveshareEPaper {
@@ -126,6 +127,26 @@ class WaveshareEPaper2P7In : public WaveshareEPaper {
   int get_height_internal() override;
 };
 
+class WaveshareEPaper2P9InB : public WaveshareEPaper {
+ public:
+  void initialize() override;
+
+  void display() override;
+
+  void dump_config() override;
+
+  void deep_sleep() override {
+    // COMMAND DEEP SLEEP
+    this->command(0x07);
+    this->data(0xA5);  // check byte
+  }
+
+ protected:
+  int get_width_internal() override;
+
+  int get_height_internal() override;
+};
+
 class WaveshareEPaper4P2In : public WaveshareEPaper {
  public:
   void initialize() override;
@@ -155,6 +176,29 @@ class WaveshareEPaper4P2In : public WaveshareEPaper {
     this->data(0x00);
     delay(100);  // NOLINT
 
+    // COMMAND POWER OFF
+    this->command(0x02);
+    this->wait_until_idle_();
+    // COMMAND DEEP SLEEP
+    this->command(0x07);
+    this->data(0xA5);  // check byte
+  }
+
+ protected:
+  int get_width_internal() override;
+
+  int get_height_internal() override;
+};
+
+class WaveshareEPaper5P8In : public WaveshareEPaper {
+ public:
+  void initialize() override;
+
+  void display() override;
+
+  void dump_config() override;
+
+  void deep_sleep() override {
     // COMMAND POWER OFF
     this->command(0x02);
     this->wait_until_idle_();
