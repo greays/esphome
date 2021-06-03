@@ -8,7 +8,7 @@ pre-commit
 
 # Unit tests
 pytest==6.2.3
-pytest-cov==2.11.1
+pytest-cov==2.12.1
 pytest-mock==3.5.1
 asyncmock==0.4.2
 hypothesis==5.21.0
