@@ -8,7 +8,7 @@ namespace rs485 {
 
 class RS485Fan : public RS485Device, public fan::Fan {
   public:
-    RS485Fan() { device_name_ = &this->name_; }
+    RS485Fan() { device_name_ = new std::string(this->name_.c_str()); }
     void setup() override;
     void dump_config() override;
     void set_speed_low(hex_t state, cmd_hex_t command) {
