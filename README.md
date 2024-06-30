@@ -1,10 +1,13 @@
-# ESPHome [![Discord Chat](https://img.shields.io/discord/429907082951524364.svg)](https://discord.gg/KhAMKrd) [![GitHub release](https://img.shields.io/github/release/esphome/esphome.svg)](https://GitHub.com/esphome/esphome/releases/)
+# Greays ESPHome Components
 
 [![ESPHome Logo](https://esphome.io/_images/logo-text.png)](https://esphome.io/)
 
 **Documentation:** https://esphome.io/
 
 # 월패드 연동 ESPHOME RS485 컴포넌트
+
+### 2023-12-23 업데이트
+1. DEPRECATED API 대응 업데이트 (LightState)
 
 ### 2022-04-07 업데이트
 1. DEPRECATED API 대응 업데이트
