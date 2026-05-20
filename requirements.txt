@@ -8,7 +8,7 @@ tzdata>=2021.1  # from time
 pyserial==3.5
 platformio==6.1.11  # When updating platformio, also update Dockerfile
 esptool==4.6.2
-click==8.1.7
+click==8.1.8
 esphome-dashboard==20231107.0
 aioesphomeapi==21.0.1
 zeroconf==0.130.0
