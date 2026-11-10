@@ -22,4 +22,4 @@ kconfiglib==13.7.1
 pyparsing >= 3.0
 
 # For autocompletion
-argcomplete>=2.0.0
+argcomplete>=3.7.2
